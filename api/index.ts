@@ -134,9 +134,23 @@ apiRouter.post('/tools/:name', async (req: Request, res: Response) => {
   }
 });
 
-// Export default app for Vercel Serverless Function entry (/api)
+// Export default handler for Vercel Serverless Function entry (/api)
 const app = express();
 app.use(express.json());
-app.use('/api', apiRouter);
 
-export default app;
+// Handle both with /api prefix and without /api prefix for Vercel proxy compatibility
+app.use('/api', apiRouter);
+app.use('/', apiRouter);
+
+// Fallback for unmatched API routes
+app.use((req: Request, res: Response) => {
+  res.status(404).json({
+    error: `API route not found: ${req.method} ${req.url}`,
+    availableEndpoints: ['/api/status', '/api/mcp/tools', '/api/mcp/call', '/api/mcp/rpc', '/api/tools/:name']
+  });
+});
+
+export default function handler(req: any, res: any) {
+  return app(req, res);
+}
+
